@@ -1,0 +1,57 @@
+
+
+				demo-06-QueryOptimizations
+
+# Contains about 2.5GB of data
+
+# select this table and show "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF100"."PARTSUPP"
+
+SELECT * FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF100"."PARTSUPP" LIMIT 10;
+
+CREATE OR REPLACE TABLE PARTSUPP_CLUSTERED
+AS SELECT * FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF100"."PARTSUPP";
+
+CREATE OR REPLACE TABLE PARTSUPP_SEARCH_OPTIMIZED
+AS SELECT * FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF100"."PARTSUPP";
+
+ALTER TABLE PARTSUPP_CLUSTERED CLUSTER BY (PS_SUPPKEY);
+
+ALTER TABLE PARTSUPP_SEARCH_OPTIMIZED ADD search optimization;
+
+
+# Show clustering and search optimization turned on
+
+# Initially optimization progress might be 0, very soon it will be 100
+
+SHOW TABLES LIKE 'PARTSUPP%';
+
+
+# Open up the query profile and show the number of partitions scanned (230/237)
+
+SELECT * FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF100"."PARTSUPP" WHERE PS_SUPPKEY = 834724;
+
+SELECT * FROM PARTSUPP_CLUSTERED WHERE PS_SUPPKEY = 834724;
+
+SELECT * FROM PARTSUPP_SEARCH_OPTIMIZED WHERE PS_SUPPKEY = 834724;
+
+
+# Run a query on a non-clustered column (note the partitions scanned - likely all)
+
+SELECT * FROM PARTSUPP_CLUSTERED WHERE PS_PARTKEY = 7334709;
+
+# The column is still search optimized (note the partitions scanned - likely 1 or 2)
+
+SELECT * FROM PARTSUPP_SEARCH_OPTIMIZED WHERE PS_PARTKEY = 7334709;
+
+
+# Open up the query profile and show the number of partitions scanned (should be the lowest for the clustered table)
+
+SELECT * FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF100"."PARTSUPP" 
+WHERE PS_SUPPKEY > 834724 AND PS_SUPPKEY < 934724;
+
+SELECT * FROM PARTSUPP_CLUSTERED
+WHERE PS_SUPPKEY > 834724 AND PS_SUPPKEY < 934724;
+
+SELECT * FROM PARTSUPP_SEARCH_OPTIMIZED
+WHERE PS_SUPPKEY > 834724 AND PS_SUPPKEY < 934724;
+
